@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentSession } from '@/lib/auth-session';
-import { getTeam, getUnlockedHint } from '@/lib/db-store';
+import { getTeam, getUnlockedHint, getTeamRemainingSeconds, isTeamTimeExpired } from '@/lib/db-store';
 import { SERVER_CHALLENGES, getSanitizedChallenge } from '@/lib/challenges-data';
 
 export async function GET() {
@@ -60,6 +60,12 @@ export async function GET() {
       finishRank: team.finishRank,
       score: team.score,
       totalAttempts: team.totalAttempts,
+      startedAt: team.startedAt,
+      timerEndTime: team.timerEndTime,
+      durationMinutes: team.durationMinutes || 20,
+      hasStarted: !!team.startedAt,
+      remainingSeconds: getTeamRemainingSeconds(team),
+      isExpired: isTeamTimeExpired(team),
     },
     mapNodes,
     activeChallenge,

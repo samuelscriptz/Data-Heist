@@ -62,8 +62,9 @@ export default function ChallengeTerminal({
     if (revealedHint || isUnlockingHint) return;
     sound.playClick();
 
+    const currentCost = challenge.hintCost ?? Math.floor(challenge.points / 2);
     const confirmed = window.confirm(
-      'UNLOCK TACTICAL HINT?\n\nA 25-point security penalty will be deducted from your team score. Proceed?'
+      `UNLOCK TACTICAL HINT?\n\nA ${currentCost}-point security penalty (50% of node value) will be deducted from your team score. Proceed?`
     );
     if (!confirmed) return;
 
@@ -277,7 +278,7 @@ export default function ChallengeTerminal({
                   {isUnlockingHint ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
                   ) : (
-                    <span>UNLOCK HINT (-25 PTS)</span>
+                    <span>UNLOCK HINT (-{challenge.hintCost ?? Math.floor(challenge.points / 2)} PTS)</span>
                   )}
                 </button>
               )}
@@ -330,7 +331,7 @@ export default function ChallengeTerminal({
                   type="text"
                   value={answerInput}
                   onChange={(e) => setAnswerInput(e.target.value)}
-                  placeholder={challenge.answerFormatHint || "Enter decoded payload or HEIST{...}"}
+                  placeholder="ENTER DECRYPTED PAYLOAD (UPPERCASE)..."
                   disabled={isSubmitting || cooldownSeconds > 0}
                   autoComplete="off"
                   spellCheck="false"

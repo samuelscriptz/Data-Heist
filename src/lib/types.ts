@@ -4,12 +4,39 @@ export type ReviewStatus = 'none' | 'pending' | 'approved' | 'rejected';
 
 export type EventStatus = 'upcoming' | 'active' | 'paused' | 'ended';
 
+export type LobbyStatus = 'pending_admission' | 'admitted' | 'in_game' | 'rejected';
+
+export type ActivityEventType = 
+  | 'join_lobby'
+  | 'admitted'
+  | 'game_start'
+  | 'node_solved'
+  | 'wrong_answer'
+  | 'hint_unlocked'
+  | 'completed'
+  | 'reconnect_requested'
+  | 'reconnect_approved'
+  | 'team_kicked';
+
+export interface ActivityEvent {
+  id: string;
+  timestamp: string;
+  type: ActivityEventType;
+  teamId: string;
+  teamName: string;
+  challengeId?: number;
+  message: string;
+  pointsDelta?: number;
+}
+
 export type ChallengeCategory = 
+  | 'Decrypting'
+  | 'Puzzle'
+  | 'CTF Flag'
   | 'Cipher & Decoding'
   | 'Network Analysis'
   | 'Steganography'
   | 'Reverse Engineering'
-  | 'CTF Flag'
   | 'Web & Database'
   | 'Cryptographic Hash'
   | 'Logic & Parity';
@@ -20,6 +47,11 @@ export interface Team {
   id: string;
   name: string;
   username: string;
+  lobbyStatus: LobbyStatus;
+  activeSessionId: string | null;
+  reconnectPending: boolean;
+  reconnectRequestedAt: string | null;
+  reconnectSessionId: string | null;
   currentChallengeIndex: number; // 1 to 10 (11 means all solved)
   isCompleted: boolean;
   completedAt: string | null; // ISO timestamp from server clock
@@ -32,6 +64,9 @@ export interface Team {
   totalAttempts: number;
   lastSolvedAt: string | null;
   createdAt: string;
+  startedAt: string | null; // null until game begins
+  timerEndTime: string | null; // startedAt + 20 minutes
+  durationMinutes: number; // default 20
 }
 
 export interface ParticipantChallenge {
@@ -40,6 +75,7 @@ export interface ParticipantChallenge {
   category: ChallengeCategory;
   difficulty: DifficultyLevel;
   points: number;
+  hintCost: number; // Exactly 50% of points (e.g. 150 pts -> 75 pts)
   description: string;
   clue: string;
   artifactType: 'hex' | 'network_packet' | 'code' | 'cipher_stream' | 'terminal_log' | 'steganography';
@@ -73,7 +109,10 @@ export interface EventConfig {
   id: string;
   name: string;
   status: EventStatus;
-  durationMinutes: number; // 90 minutes
+  gameStarted: boolean;
+  gameStartedAt: string | null;
+  gameEndTime: string | null;
+  durationMinutes: number; // 20 minutes
   startTime: string | null; // ISO timestamp
   endTime: string | null; // ISO timestamp
   venueName: string;
@@ -106,15 +145,24 @@ export interface AuthSession {
   teamName?: string;
 }
 
+export interface FloorMapInfo {
+  floorNumber: number;
+  title: string;
+  subtitle: string;
+  imageUrl: string;
+  clueZone: string;
+}
+
 export interface VenueMapData {
   accessGranted: boolean;
   teamName: string;
-  finishRank: number;
+  finishRank: number | null;
   venueName: string;
   venueRoom: string;
   revealedAt: string;
   secretExtractionCode: string;
   mapCoordinates: string;
-  mapSvg: string;
+  mapSvg?: string;
+  floors?: FloorMapInfo[];
   instructions: string[];
 }

@@ -1,238 +1,276 @@
 import { ServerChallenge, ParticipantChallenge } from './types';
 
 // The authoritative server-side challenge database
-// Plaintext answers and hashes are NEVER shipped to the participant's client!
+// Composition: 4 Decrypting questions, 4 Puzzle questions, 2 CTF questions
+// All answers are evaluated in UPPERCASE. Plaintext answers and hashes are never shipped to the client!
 export const SERVER_CHALLENGES: ServerChallenge[] = [
   {
     id: 1,
-    title: "Breach The Gateway",
-    category: "Cipher & Decoding",
+    title: "Gateway Cipher Stream",
+    category: "Decrypting",
     difficulty: "Easy",
     points: 100,
-    description: "The mainframe gateway has rejected standard handshake protocols. A sensor tap captured an incoming raw base-encoded stream on port 8080. Decode the transmission to obtain the root bypass key.",
-    clue: "The payload was encoded using standard RFC 4648 Base64 serialization.",
+    hintCost: 50,
+    description: "An incoming handshake packet was captured on perimeter port 8080. The transmission payload is encoded using standard RFC 4648 Base64 serialization. Decode the transmission stream to obtain the root gateway override token.",
+    clue: "Raw payload intercepted: SEVJU1RfVEVSTUlOQUxfT1ZFUlJJREU=",
     artifactType: "cipher_stream",
-    artifactContent: "QUNDRVNTX0dSQU5URURfUE9SVF84MDgw",
-    answerFormatHint: "Format: UPPERCASE string with underscores (e.g., WORD_WORD_PORT_XXXX)",
+    artifactContent: "SEVJU1RfVEVSTUlOQUxfT1ZFUlJJREU=",
+    answerFormatHint: "Format: UPPERCASE string with underscores",
     hasHint: true,
     hintPenaltySeconds: 60,
-    hintText: "Use a Base64 decoder tool or terminal command: echo 'QUNDRVNT...' | base64 -d",
-    acceptedAnswers: ["access_granted_port_8080", "access_granted_port_8080"],
-    answerHashSha256: "b0c793ff0185a81e35a110dd5604130095ea81d9f09ebdbfba34125f187a54a0",
+    hintText: "The payload is serialized using standard RFC 4648 Base64 encoding. Use a Base64 decoding algorithm, terminal utility (base64 -d), or online cryptanalytic tool.",
+    acceptedAnswers: ["HEIST_TERMINAL_OVERRIDE"],
+    answerHashSha256: "efc812ebedb1c94791aff07ef58cefba21eda4775d061aa10e66ecd7442b2ffb",
     isUnlocked: true,
     isSolved: false,
   },
   {
     id: 2,
-    title: "The Caesar Infiltration",
-    category: "Cipher & Decoding",
+    title: "The Tri-Word Association",
+    category: "Puzzle",
     difficulty: "Easy",
     points: 150,
-    description: "An encrypted warning was found inside an abandoned terminal log. The rogue sysadmin left a 13-step rotation shift on the operational protocol string.",
-    clue: "Julius Caesar's classic rotation (ROT13) shifts each letter halfway across the English alphabet.",
+    hintCost: 75,
+    description: "The authentication subroutine presents a word association puzzle. Find the single 6-letter computer science term that meaningfully completes all three fundamental computing concepts below.",
+    clue: "Identify the computing term that connects logarithmic search, tree hierarchies, and foundational machine digits.",
     artifactType: "terminal_log",
-    artifactContent: `[00:14:22] SYSLOG-DAEMON: SECURITY ANOMALY DETECTED
-[00:14:23] INTERCEPTED_BUFFER: SVERJNYY_BIEEVQR_NPGVIR
-[00:14:24] STATUS: ENCRYPTION APPLIED (ROT-13)`,
-    answerFormatHint: "Format: UPPERCASE string with underscores",
+    artifactContent: `[SECURITY VERIFICATION PUZZLE: 6-LETTER COMPUTING TERM]
+1. [ ______ ] Search  -> The efficient divide-and-conquer logarithmic lookup algorithm.
+2. [ ______ ] Tree    -> A fundamental hierarchical data structure with at most 2 child nodes.
+3. [ ______ ] Digits  -> The fundamental base-2 0s and 1s processed by computer processors.`,
+    answerFormatHint: "Format: Single UPPERCASE word (6 letters)",
     hasHint: true,
     hintPenaltySeconds: 60,
-    hintText: "Shift each character back by 13 positions (or rotate again by 13): S -> F, V -> I, etc.",
-    acceptedAnswers: ["firewall_override_active"],
-    answerHashSha256: "450702d080ec6ef32a4e21a48c66e4a28f8f902404b901dd1491cf1d2df0f653",
+    hintText: "Think of the mathematical number system with radix 2 that serves as the root foundation of all digital electronics and computing architectures.",
+    acceptedAnswers: ["BINARY"],
+    answerHashSha256: "4c77b56b7cf3077c725c2f433eb76156bd231c23b56805f5a06fc06b87450a43",
     isUnlocked: false,
     isSolved: false,
   },
   {
     id: 3,
-    title: "Kernel Memory Dump",
-    category: "Reverse Engineering",
+    title: "The Caesar Shift Alert",
+    category: "Decrypting",
     difficulty: "Medium",
     points: 200,
-    description: "The core memory bus crashed under heavy load, leaving behind a 64-byte hex segment. The hardware security module was holding a 10-character hexadecimal pointer.",
-    clue: "Inspect the hexadecimal values and translate the non-null ASCII bytes.",
-    artifactType: "hex",
-    artifactContent: `OFFSET    00 01 02 03 04 05 06 07  08 09 0A 0B 0C 0D 0E 0F   ASCII
-00000000  7F 45 4C 46 02 01 01 00  00 00 00 00 00 00 00 00   .ELF............
-00000010  03 00 3E 00 01 00 00 00  90 58 02 00 00 00 00 00   ..>......X......
-00000020  30 78 37 46 38 45 34 41  39 43 00 00 56 41 55 4C   0x7F8E4A9C..VAUL
-00000030  54 5F 4B 45 59 00 00 00  DE AD BE EF 00 00 00 00   T_KEY...`,
-    answerFormatHint: "Format: 0x followed by 8 hex characters (e.g., 0xXXXXXXXX)",
+    hintCost: 100,
+    description: "An encrypted warning was flagged in the firewall daemon logs. A rogue operator rotated the incident alert string by 13 alphabetical positions (ROT13) to evade intrusion keyword filters. Revert the shift to retrieve the alert phrase.",
+    clue: "Firewall log buffer: SVERJNYY_OERNPU_QRGRPGRQ",
+    artifactType: "terminal_log",
+    artifactContent: `[02:14:09] INTRUSION-DAEMON: SECURITY ANOMALY DETECTED
+[02:14:10] ENCRYPTION-TYPE: ROT13 SUBSTITUTION
+[02:14:11] INTERCEPTED_BUFFER: SVERJNYY_OERNPU_QRGRPGRQ
+[02:14:12] ACTION: REVERT ROT13 SHIFT TO RETRIEVE ALERT`,
+    answerFormatHint: "Format: UPPERCASE string with underscores",
     hasHint: true,
-    hintPenaltySeconds: 90,
-    hintText: "Look closely at offset 00000020. The ASCII column reveals the memory address directly.",
-    acceptedAnswers: ["0x7f8e4a9c"],
-    answerHashSha256: "02e4e135be362da580a52df243689da442655a6d595166cf2c3325c3167191d8",
+    hintPenaltySeconds: 60,
+    hintText: "The ciphertext uses a ROT-13 symmetric rotation (each letter shifted by 13 positions in the 26-letter Latin alphabet). Applying the 13-letter shift once more restores the plaintext.",
+    acceptedAnswers: ["FIREWALL_BREACH_DETECTED"],
+    answerHashSha256: "8cdd18c0372b9b56b75d4b302b9d6fbab7b863f37d284fd41f0fb2e773f6315f",
     isUnlocked: false,
     isSolved: false,
   },
   {
     id: 4,
-    title: "Steganography Signal",
-    category: "Steganography",
+    title: "The Three Server Rooms",
+    category: "Puzzle",
     difficulty: "Medium",
     points: 250,
-    description: "An HTTP response from the lab's secure enclave carried an anomalous custom header containing a sequence of hex-paired ASCII nibbles.",
-    clue: "Each two-digit hexadecimal number corresponds to a standard ASCII character code.",
-    artifactType: "steganography",
-    artifactContent: `HTTP/2 200 OK
-Server: DataHeist-Enclave/4.2
-Content-Type: application/octet-stream
-X-Stego-Payload: 5155414e54554d5f454e54414e474c454d454e54
-X-Parity-Check: 0x99A1
-Cache-Control: no-store`,
-    answerFormatHint: "Format: TWO WORDS separated by underscore (UPPERCASE)",
+    hintCost: 125,
+    description: "Three critical servers named Server Alpha, Server Beta, and Server Gamma are housed individually across three rooms: Room 101, Room 102, and Room 103. Each server features a single LED indicator light glowing RED, BLUE, or GREEN.\n\nUse the audit facts in the terminal artifact to deduce which server is located inside Room 101.",
+    clue: "Analyze the 3 audit facts systematically using process of elimination.",
+    artifactType: "terminal_log",
+    artifactContent: `[INFRASTRUCTURE AUDIT REPORT]
+FACILITY ROOMS: Room 101 | Room 102 | Room 103
+SERVERS       : Server Alpha | Server Beta | Server Gamma
+STATUS LIGHTS : Green | Blue | Red
+
+DISCLOSED AUDIT FACTS:
+1. Server Alpha is NOT in Room 101, and its status light glows GREEN.
+2. The server located in Room 102 has a BLUE status light.
+3. Server Gamma is physically located in Room 103.
+
+QUESTION:
+Which server is located in Room 101?`,
+    answerFormatHint: "Format: UPPERCASE server name (e.g., ALPHA, BETA, or GAMMA)",
     hasHint: true,
-    hintPenaltySeconds: 90,
-    hintText: "51='Q', 55='U', 41='A', 4E='N', 54='T', 55='U', 4D='M'... convert the rest of the hex pairs to ASCII.",
-    acceptedAnswers: ["quantum_entanglement"],
-    answerHashSha256: "7b4aa787268d87a27fa463335db0dfd6dbde2ae5b839aaec9fefec024dc6c9ce",
+    hintPenaltySeconds: 60,
+    hintText: "Use deductive reasoning: Fact 3 fixes Gamma in Room 103. Therefore only Alpha and Beta remain for Rooms 101 and 102. Check Fact 1 regarding where Alpha cannot be situated.",
+    acceptedAnswers: ["SERVER_BETA", "BETA", "SERVER BETA"],
+    answerHashSha256: "460f1dc94eea05d72952df34302c7eae443e00311b5b1f412d40df8d06630d0c",
     isUnlocked: false,
     isSolved: false,
   },
   {
     id: 5,
-    title: "Packet Sniffer (CTF)",
+    title: "HTTP Header Token Infiltration",
     category: "CTF Flag",
     difficulty: "Medium",
     points: 300,
-    description: "A rogue team member spun up an unauthorized exfiltration tunnel. Wireshark intercepted this decoded packet snippet containing a high-value CTF flag.",
-    clue: "URL-decode the exfiltration query string parameter in the captured HTTP GET request.",
-    artifactType: "network_packet",
-    artifactContent: `Frame 412: 184 bytes on wire (1472 bits)
-Transmission Control Protocol, Src Port: 54122, Dst Port: 443
-Hypertext Transfer Protocol:
-    GET /vault/exfil?flag=HEIST%7Bp4ck3t_sn1ff3r_d3t3ct3d%7D&session=991 HTTP/1.1
-    Host: exfil.dataheist.internal
-    User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:109.0)
-    Accept: text/html,application/xhtml+xml`,
-    answerFormatHint: "Format: CTF Flag format HEIST{...}",
+    hintCost: 150,
+    description: "A target administrative API endpoint was captured during network reconnaissance. The development team concealed an authorization token inside a custom HTTP response header, serialized in RFC 4648 Base64. Inspect the HTTP raw header dump, locate the staging token header, and decode its payload to capture the flag.",
+    clue: "Inspect the raw HTTP response headers for non-standard staging directives.",
+    artifactType: "code",
+    artifactContent: `HTTP/1.1 200 OK
+Date: Sun, 09 Nov 2026 08:30:00 GMT
+Server: Apache/2.4.52 (Ubuntu)
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+X-Staging-Token: RkxBR3tXRUJfSEVBREVSX0VYVFJBQ1RFRH0=
+Content-Type: text/html; charset=UTF-8
+Content-Length: 312
+
+<!DOCTYPE html>
+<html>
+  <head><title>Staging Mainframe Gateway</title></head>
+  <body>
+    <h2>Restricted Administrative Subsystem</h2>
+    <p>Authentication token required in staging headers.</p>
+  </body>
+</html>`,
+    answerFormatHint: "Format: CTF Flag format FLAG{...} in UPPERCASE",
     hasHint: true,
-    hintPenaltySeconds: 120,
-    hintText: "%7B is '{' and %7D is '}'. Decode the query string flag value completely.",
-    acceptedAnswers: ["heist{p4ck3t_sn1ff3r_d3t3ct3d}"],
-    answerHashSha256: "522137dd80f7aa0da2499d0baefd092c462704179377be83416b06385be66a01",
+    hintPenaltySeconds: 90,
+    hintText: "Locate the custom HTTP header beginning with 'X-'. The token value is encoded in RFC 4648 Base64. Extract the token and decode it using a standard Base64 decoder.",
+    acceptedAnswers: ["FLAG{WEB_HEADER_EXTRACTED}"],
+    answerHashSha256: "ca5d9c0741d272209653be21f2ad5194a4c11cf4e880de746f5e8f096ff83d88",
     isUnlocked: false,
     isSolved: false,
   },
   {
     id: 6,
-    title: "SQL Injection Mystery",
-    category: "Web & Database",
+    title: "Raw Hex Byte Stream",
+    category: "Decrypting",
     difficulty: "Medium",
     points: 300,
-    description: "The authentication subroutine evaluated an untrusted string. An attacker used a tautological payload to bypass authentication and dump the admin session token.",
-    clue: "Analyze the query execution log to find the generated bypass token.",
-    artifactType: "terminal_log",
-    artifactContent: `[SQL-DEBUG] INCOMING QUERY: SELECT * FROM admin_creds WHERE user = '' OR 1=1; --'
-[SQL-ENGINE] Tautology validated. Row count: 1. Authentication forced TRUE.
-[SQL-ENGINE] Auth token dispatched to client: ADMIN_BYPASS_TOKEN_404
-[AUDIT-LOG] Warning: SQL Injection executed from terminal 192.168.10.42`,
-    answerFormatHint: "Format: ADMIN_BYPASS_TOKEN_XXX",
+    hintCost: 150,
+    description: "A network tap captured a raw hexadecimal byte sequence traveling to the mainframe security module. Convert the two-digit hex pairs into readable ASCII characters to obtain the enclave passphrase.",
+    clue: "Captured raw hex stream: 53 45 43 55 52 45 5F 4D 41 49 4E 46 52 41 4D 45",
+    artifactType: "hex",
+    artifactContent: `CAPTURED RAW HEX DUMP:
+53 45 43 55 52 45 5F 4D 41 49 4E 46 52 41 4D 45
+
+SYSTEM NOTICE:
+Byte sequence is encoded in standard 8-bit ASCII hexadecimal representation.`,
+    answerFormatHint: "Format: TWO UPPERCASE words separated by underscore",
     hasHint: true,
-    hintPenaltySeconds: 90,
-    hintText: "The token dispatched by the SQL-ENGINE after the injection succeeded is clearly logged in the audit trace.",
-    acceptedAnswers: ["admin_bypass_token_404"],
-    answerHashSha256: "0c9d64ba7135c7546452df39a38f323c28059ff9fb12b59ecad18bcf3baea1c4",
+    hintPenaltySeconds: 60,
+    hintText: "Each two-digit hex pair represents one ASCII character in hexadecimal (base 16). For example, 0x41 is 'A', 0x5F is '_'. Convert each hex byte into its ASCII character equivalent.",
+    acceptedAnswers: ["SECURE_MAINFRAME"],
+    answerHashSha256: "b90a1c35fcbc8aa10d38a0d382dc4540548592c5216b1f7d9ae87ce457d004f7",
     isUnlocked: false,
     isSolved: false,
   },
   {
     id: 7,
-    title: "Polyalphabetic Enigma",
-    category: "Cipher & Decoding",
+    title: "The Scrambled Diagnostic Tool",
+    category: "Puzzle",
     difficulty: "Hard",
     points: 350,
-    description: "An encrypted directive was transmitted over the lab's intercom system. The cryptogram was encoded with a Vigenère cipher using the event keyword 'HEIST'.",
-    clue: "Decrypt the ciphertext using the Vigenère square with the repeating key 'HEIST'.",
-    artifactType: "cipher_stream",
-    artifactContent: `CIPHERTEXT : JPTLLV_UINPOVI_WGTJLVIQDLS
-KEYWORD    : HEISTHEISTHEISTHEISTHEIST
-ALGORITHM  : VIGENERE (A=0 ... Z=25)`,
-    answerFormatHint: "Format: THREE WORDS separated by underscores (UPPERCASE)",
+    hintCost: 175,
+    description: "A terminal crash log dumped an unscrambled 10-letter anagram of a famous diagnostic command. Systems engineers rely on this network utility to trace the exact route and measure transit delays of packets across an Internet Protocol (IP) network.",
+    clue: "Scrambled letters: E - R - T - O - A - U - C - E - R - T",
+    artifactType: "terminal_log",
+    artifactContent: `[DIAGNOSTIC CRASH REPORT - IDENTIFIER BUFFER CORRUPTED]
+ANAGRAM SCRAMBLED LETTERS:
+E - R - T - O - A - U - C - E - R - T
+
+SYSTEM PARAMETERS:
+- Word Length  : Exactly 10 Letters
+- Category     : Network Diagnostic Utility
+- Action       : Traces hops and latency to remote hosts`,
+    answerFormatHint: "Format: Single UPPERCASE command name (10 letters)",
     hasHint: true,
-    hintPenaltySeconds: 120,
-    hintText: "Using key 'HEIST': J - H = C, P - E = I, T - I = P... first word is CIPHER.",
-    acceptedAnswers: ["cipher_machine_synchronized"],
-    answerHashSha256: "7922d56d10fa095a4bb3133ff3ce2ae09bb2a1aeead9be67d7168db7f8e8ea6f",
+    hintPenaltySeconds: 90,
+    hintText: "Unscramble the letters to form the standard Unix/Linux networking tool that sends packets with incrementing TTL (Time-To-Live) values to map the path to a server.",
+    acceptedAnswers: ["TRACEROUTE"],
+    answerHashSha256: "5e7ede6cbb3f0f55e3830ca53e4912dd0d628673d0f5776ac0a08d575e7a62d2",
     isUnlocked: false,
     isSolved: false,
   },
   {
     id: 8,
-    title: "Binary Hash Cracker",
-    category: "Cryptographic Hash",
+    title: "The Polyalphabetic Directive",
+    category: "Decrypting",
     difficulty: "Hard",
     points: 400,
-    description: "During a vulnerability scan, a shadow password hash was scraped from `/etc/shadow.bak`. Break the unsalted MD5 hash to discover the root password.",
-    clue: "The password is 11 characters long, combines 'cybercore' and the year '26'.",
-    artifactType: "code",
-    artifactContent: `SHADOW HASH SCRAPED:
-Algorithm : MD5 (Message Digest 5)
-Target Hash : 3a4f6be4e3f49ef40fbe3d221683be83
-Entropy Assessment: Low complexity common collegiate password pattern.`,
-    answerFormatHint: "Format: lowercase alphanumeric string (11 characters)",
+    hintCost: 200,
+    description: "An encrypted operational directive was broadcast across the lab's radio frequency. It was encrypted using the classic Vigenère polyalphabetic cipher with the symposium keyword 'HEIST'. Decrypt the ciphertext to retrieve the mission clearance phrase.",
+    clue: "Ciphertext: KEBS_ALMAL_OPGBGKF | Key: HEIST",
+    artifactType: "cipher_stream",
+    artifactContent: `CIPHERTEXT : KEBS_ALMAL_OPGBGKF
+KEYWORD    : HEIST
+ALGORITHM  : VIGENERE (A=0, B=1, ... Z=25)
+
+MATHEMATICAL FORMULA:
+Pi = (Ci - Ki + 26) mod 26
+(Underscores are preserved)`,
+    answerFormatHint: "Format: THREE UPPERCASE words separated by underscores",
     hasHint: true,
-    hintPenaltySeconds: 120,
-    hintText: "Verify the clue: Compute MD5('cybercore26') to see if it matches 3a4f6be4e3f49ef40fbe3d221683be83.",
-    acceptedAnswers: ["cybercore26"],
-    answerHashSha256: "17bb4c3b6bf5772a0f8bfdfc1264c185bc0b0d3cb35824c96a84c6c99c3df313",
+    hintPenaltySeconds: 90,
+    hintText: "This polyalphabetic substitution shifts each letter backwards according to the corresponding letter of the repeated key 'HEISTHEIST...'. Align each ciphertext character with the repeated key and reverse the Caesar shift.",
+    acceptedAnswers: ["DATA_HEIST_VICTORY"],
+    answerHashSha256: "82efa3f6577989024a5a3371e3675a74b4ec4f1efe7394da6008d2bbdaf0ab22",
     isUnlocked: false,
     isSolved: false,
   },
   {
     id: 9,
-    title: "Stack Overflow Shellcode (CTF)",
+    title: "Network Packet Telemetry Stream",
     category: "CTF Flag",
     difficulty: "Expert",
     points: 450,
-    description: "A binary service running on port 31337 had an unprotected buffer. An attacker sent an exploit string to overwrite EIP and leak the secure enclave secret flag.",
-    clue: "Read the disassembled function return frame and reconstruct the flag payload.",
-    artifactType: "code",
-    artifactContent: `0x000011a9 <+0>:   push   %rbp
-0x000011aa <+1>:   mov    %rsp,%rbp
-0x000011ad <+4>:   sub    $0x40,%rsp
-0x000011b1 <+8>:   lea    -0x30(%rbp),%rax
-0x000011b5 <+12>:  movabs $0x7b5453494548,%rbx   ; "HEIST{"
-0x000011bf <+22>:  movabs $0x346b6334705f,%rcx   ; "_p4ck4" -> "st4ck_sm4sh"
-0x000011c9 <+32>:  mov    $0x737333636375735f,%rdx ; "_success"
-0x000011d3 <+42>:  callq  0x1030 <puts@plt>
-FLAG RECONSTRUCTION: HEIST{st4ck_sm4sh1ng_succ3ss}`,
-    answerFormatHint: "Format: CTF Flag format HEIST{...}",
+    hintCost: 225,
+    description: "A deep-packet inspection alert was triggered on an anomalous outbound HTTP beacon. An attacker concealed an exfiltrated flag inside the query parameter as a continuous hexadecimal string. Reconstruct the hex byte sequence from the URL query and decode it to obtain the flag.",
+    clue: "Inspect the telemetry beacon query string parameter for encoded hex bytes.",
+    artifactType: "network_packet",
+    artifactContent: `WIRESHARK PACKET DISSECTION [Frame #8104]
+----------------------------------------------------------------------
+Frame Length: 214 bytes on wire
+Transmission Control Protocol: Src Port: 54102, Dst Port: 80
+Hypertext Transfer Protocol:
+  GET /telemetry/beacon?stream=464C41477B4E4554574F524B5F5041434B45545F4845587D HTTP/1.1
+  Host: c2-collector.internal.heist
+  User-Agent: DataHeist-Agent/4.1
+  Accept: */*
+  Connection: close
+----------------------------------------------------------------------`,
+    answerFormatHint: "Format: CTF Flag format FLAG{...} in UPPERCASE",
     hasHint: true,
-    hintPenaltySeconds: 120,
-    hintText: "The disassembled string literal and commentary in the exploit trace gives the flag directly.",
-    acceptedAnswers: ["heist{st4ck_sm4sh1ng_succ3ss}"],
-    answerHashSha256: "8682e88a385f099c0da9895c27dbd23f7ce93259dbb4c6e9195b8d0034a706b8",
+    hintPenaltySeconds: 90,
+    hintText: "The 'stream' parameter in the GET request contains ASCII characters represented as two-digit hexadecimal values. Group the hex string into pairs of two (e.g. 46 4C 41...) and translate each byte into its ASCII character.",
+    acceptedAnswers: ["FLAG{NETWORK_PACKET_HEX}"],
+    answerHashSha256: "a0a86a3b69044dbb8281fa055cc3ddb574f50453a5c22c820f32b18a22c443dd",
     isUnlocked: false,
     isSolved: false,
   },
   {
     id: 10,
-    title: "Master Vault Override",
-    category: "Logic & Parity",
+    title: "The Master Enclave Riddle",
+    category: "Puzzle",
     difficulty: "Expert",
     points: 500,
-    description: "The final barrier protecting the symposium data core! The master override protocol demands a synthesis of the security tokens verified across the previous nodes.",
-    clue: "Combine the overarching mission authorization code. Check the emergency protocols below.",
+    hintCost: 250,
+    description: "You have arrived at the final security gate guarding the building's physical venue map! The enclave door lock is protected by an electronic keypad demanding an 8-letter credential word. An inscription etched onto the terminal presents the following cybersecurity riddle:",
+    clue: "An 8-letter credential word central to computer authentication and security hygiene.",
     artifactType: "terminal_log",
-    artifactContent: `[SYSTEM COMMAND CONSOLE - FINAL ENCLAVE NODE #10]
+    artifactContent: `=====================================================
+MAINFRAME VAULT DOOR #10: FINAL CLEARANCE VERIFICATION
 =====================================================
-CRITICAL LOCKOUT STATUS: ARMED
-REWARD STATUS: VENUE EXTRACTION MAP DISPATCH (TOP 6 ONLY)
-=====================================================
-PROTOCOL DIRECTIVE:
-Enter the Emergency Alpha Override phrase to unlock the core.
-The master cipher verification formula:
-OMEGA + OVERRIDE + ROOT + VERIFIED
-Joined by standard system delimiter '_'.
+RIDDLE OF THE CORE:
+"I have no physical key, yet I unlock every terminal.
+I am strongest when I have symbols, numbers, and case.
+Administrators force you to change me every 90 days.
+Never share me with strangers or write me on a sticky note."
+
+QUESTION: What 8-letter credential word unlocks the final vault?
 =====================================================`,
-    answerFormatHint: "Format: UPPERCASE string with underscores (e.g., WORD_WORD_WORD_WORD)",
+    answerFormatHint: "Format: Single UPPERCASE word (8 letters)",
     hasHint: true,
-    hintPenaltySeconds: 120,
-    hintText: "Follow the protocol directive exactly: OMEGA_OVERRIDE_ROOT_VERIFIED",
-    acceptedAnswers: ["omega_override_root_verified"],
-    answerHashSha256: "97da7dfca833b37803a64d1f237f3eb36a99ce4876a91c1ee0c791dd1eaeeef6",
+    hintPenaltySeconds: 90,
+    hintText: "Consider the fundamental secret string of characters required for user authentication, commonly paired with a username.",
+    acceptedAnswers: ["PASSWORD"],
+    answerHashSha256: "0be64ae89ddd24e225434de95d501711339baeee18f009ba9b4369af27d30d60",
     isUnlocked: false,
     isSolved: false,
   },
@@ -240,8 +278,8 @@ Joined by standard system delimiter '_'.
 
 // Helper to get sanitized challenge for participant (no answers, no hint text if unbought)
 export function getSanitizedChallenge(
-  challengeId: number, 
-  isUnlocked: boolean, 
+  challengeId: number,
+  isUnlocked: boolean,
   isSolved: boolean,
   hintRevealed: string | null = null
 ): ParticipantChallenge | null {
@@ -254,6 +292,7 @@ export function getSanitizedChallenge(
     category: challenge.category,
     difficulty: challenge.difficulty,
     points: challenge.points,
+    hintCost: challenge.hintCost,
     description: challenge.description,
     clue: challenge.clue,
     artifactType: challenge.artifactType,

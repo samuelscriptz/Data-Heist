@@ -9,7 +9,8 @@ import {
   AlertTriangle, 
   Radio, 
   RefreshCw,
-  Trophy
+  Trophy,
+  Lock
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { sound } from '@/lib/audio';
@@ -175,11 +176,11 @@ export default function CompletionReviewScreen({
 
         {/* Status Breakdown & Map Dispatch Callout */}
         {currentStatus === 'pending' && (
-          <div className="bg-amber-950/20 border border-amber-500/30 rounded-xl p-4 text-left font-mono space-y-2">
+          <div className="bg-amber-950/20 border border-amber-500/30 rounded-xl p-5 text-left font-mono space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-xs text-amber-300 font-bold flex items-center gap-2">
                 <Radio className="w-4 h-4 text-amber-400 animate-pulse" />
-                CLEARANCE VERIFICATION IN PROGRESS
+                AUDIT VERIFICATION IN PROGRESS (LEAD PROCTOR APPROVAL REQUIRED)
               </h4>
               <button
                 onClick={() => sound.playClick()}
@@ -191,9 +192,18 @@ export default function CompletionReviewScreen({
               </button>
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              The symposium lead proctors are currently reviewing your team&apos;s answer audit trail. 
-              The secret Venue Extraction Map will be revealed automatically to the <strong>first six approved teams</strong>.
+              Your submission timestamp has been recorded. All 10 challenge sectors are solved! The 3-floor physical venue blueprints remain encrypted under quarantine until the symposium proctor reviews and authorizes your clearance in the Organizer Console.
             </p>
+
+            <div className="bg-slate-900/80 border border-amber-500/30 rounded-lg p-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs text-amber-300">
+                <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>3-FLOOR VENUE BLUEPRINTS: <strong className="text-amber-200">LOCKED (AWAITING ADMIN APPROVAL)</strong></span>
+              </div>
+              <span className="text-[10px] uppercase font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30">
+                PENDING
+              </span>
+            </div>
           </div>
         )}
 
@@ -204,7 +214,7 @@ export default function CompletionReviewScreen({
               TOP 6 CLEARANCE CONFIRMED (RANK #{finishRank || 1})
             </div>
             <p className="text-xs text-slate-200">
-              Your finish has been certified! You are eligible to retrieve the physical Symposium Data Core from the secure room.
+              Your finish has been certified! You are officially authorized to retrieve the physical Symposium Data Core from the 3rd floor enclave.
             </p>
 
             <button
@@ -213,7 +223,7 @@ export default function CompletionReviewScreen({
               className="px-6 py-3 rounded-lg font-mono font-black text-sm bg-emerald-400 hover:bg-emerald-300 text-slate-950 flex items-center justify-center gap-2 mx-auto cursor-pointer glow-green transition-all transform hover:scale-105"
             >
               <MapPin className="w-4 h-4" />
-              {loadingMap ? 'AUTHENTICATING CLEARANCE...' : 'REVEAL VENUE EXTRACTION MAP'}
+              {loadingMap ? 'AUTHENTICATING CLEARANCE...' : 'VIEW 3-FLOOR VENUE BLUEPRINTS'}
             </button>
 
             {mapError && (
@@ -223,14 +233,21 @@ export default function CompletionReviewScreen({
         )}
 
         {currentStatus === 'approved' && !mapEligible && (
-          <div className="bg-slate-900/80 border border-slate-700 rounded-xl p-5 text-center font-mono space-y-2">
+          <div className="bg-slate-900/80 border border-slate-700 rounded-xl p-5 text-center font-mono space-y-4">
             <h4 className="text-sm font-bold text-slate-200">
               SUBMISSION VERIFIED (RANK #{finishRank || 7})
             </h4>
             <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
-              All 10 challenges verified. However, the venue map quota (first 6 teams) has already been claimed. 
-              Outstanding work on completing the full heist!
+              All 10 challenges verified. The initial venue map quota (first 6 teams) has been claimed, but you have unlocked the facility maps for exploration.
             </p>
+            <button
+              onClick={handleOpenVenueMap}
+              disabled={loadingMap}
+              className="px-6 py-2.5 rounded-lg font-mono font-bold text-xs bg-cyan-500 hover:bg-cyan-400 text-slate-950 flex items-center justify-center gap-2 mx-auto cursor-pointer transition-all"
+            >
+              <MapPin className="w-4 h-4" />
+              {loadingMap ? 'LOADING...' : 'VIEW 3-FLOOR VENUE BLUEPRINTS'}
+            </button>
           </div>
         )}
 

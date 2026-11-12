@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     if (db.eventConfig.status === 'ended') {
       return NextResponse.json(
-        { error: 'The 90-minute DATA HEIST symposium has concluded. Submissions closed.' },
+        { error: 'The 30-minute DATA HEIST symposium has concluded. Submissions closed.' },
         { status: 403 }
       );
     }

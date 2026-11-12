@@ -14,17 +14,26 @@ interface HeaderNavProps {
     role: string;
     teamId?: string;
   } | null;
+  showTimer?: boolean;
+  timerEndTime?: string | null;
+  durationMinutes?: number;
 }
 
-export default function HeaderNav({ user }: HeaderNavProps) {
+export default function HeaderNav({ 
+  user, 
+  showTimer = false, 
+  timerEndTime, 
+  durationMinutes = 20 
+}: HeaderNavProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const isHomePage = pathname === '/';
 
   const handleLogout = async () => {
     sound.playClick();
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/login');
+      router.push('/');
       router.refresh();
     } catch (err) {
       console.error('Logout error:', err);
@@ -63,10 +72,16 @@ export default function HeaderNav({ user }: HeaderNavProps) {
 
         {/* Navigation links & Countdown */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Compact countdown */}
-          <div className="hidden md:block">
-            <EventCountdown compact />
-          </div>
+          {/* Compact countdown: strictly hidden on home page and only visible if challenge is active */}
+          {!isHomePage && (showTimer || user?.role === 'organizer') && (
+            <div className="hidden md:block">
+              <EventCountdown 
+                compact 
+                endTime={timerEndTime} 
+                durationMinutes={durationMinutes} 
+              />
+            </div>
+          )}
 
           <nav className="flex items-center gap-1">
             {user?.role === 'participant' && (
@@ -139,11 +154,12 @@ export default function HeaderNav({ user }: HeaderNavProps) {
             </div>
           ) : (
             <Link
-              href="/login"
+              href="/admin/login"
               onClick={() => sound.playClick()}
-              className="px-3 py-1.5 rounded font-mono text-xs bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition-all cursor-pointer glow-green"
+              className="px-3 py-1.5 rounded font-mono text-xs bg-purple-950/40 hover:bg-purple-900/60 text-purple-300 border border-purple-500/40 font-bold transition-all cursor-pointer glow-purple flex items-center gap-1.5"
             >
-              SIGN IN
+              <Shield className="w-3 h-3 text-purple-400" />
+              <span>PROCTOR</span>
             </Link>
           )}
         </div>

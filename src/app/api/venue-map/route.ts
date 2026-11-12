@@ -46,56 +46,35 @@ export async function GET() {
     return NextResponse.json({ error: 'Team not found.' }, { status: 404 });
   }
 
-  // Verification checks:
-  // 1. Must have finished Challenge 10
-  if (!team.isCompleted) {
-    return NextResponse.json(
-      { error: 'Access Denied: Challenge 10 must be completed before venue map can be requested.' },
-      { status: 403 }
-    );
-  }
-
-  // 2. Must be approved by organizer
-  if (team.reviewStatus === 'pending') {
+  // Verification check:
+  // Must have completed all 10 challenges AND received proctor/admin approval
+  if (!team.isCompleted || team.reviewStatus !== 'approved' || !team.mapEligible) {
     return NextResponse.json(
       { 
-        error: 'Access Pending: Your Challenge 10 completion is currently awaiting review by the symposium proctors.',
-        status: 'pending' 
+        error: 'Access Denied: Venue map access requires official organizer/admin approval. Your completion status is currently pending or not eligible.',
+        reviewStatus: team.reviewStatus,
+        mapEligible: team.mapEligible,
       },
       { status: 403 }
     );
   }
 
-  if (team.reviewStatus === 'rejected') {
-    return NextResponse.json(
-      { error: 'Access Denied: Your completion clearance was rejected or flagged by the organizer.' },
-      { status: 403 }
-    );
-  }
-
-  // 3. Must be within the first 6 approved teams (mapEligible == true)
-  if (!team.mapEligible) {
-    return NextResponse.json(
-      { 
-        error: 'Access Quota Exceeded: Only the first six approved teams qualify for the secret venue map dispatch. Thank you for completing all 10 challenges!',
-        status: 'quota_exceeded',
-        rank: team.finishRank
-      },
-      { status: 403 }
-    );
-  }
-
-  // All checks passed! Fetch the venue map
+  // All 10 challenges completed and approved! Fetch the 3-floor venue map
   const mapData = getVenueMapForTeam(team.id);
   if (!mapData) {
     return NextResponse.json(
-      { error: 'Unable to retrieve venue blueprint data.' },
-      { status: 500 }
+      { error: 'Unable to retrieve venue blueprint data. Organizer approval required.' },
+      { status: 403 }
     );
   }
 
   // Return strictly private, un-cached response
-  return NextResponse.json(mapData, {
+  return NextResponse.json({
+    ...mapData,
+    reviewStatus: team.reviewStatus,
+    mapEligible: team.mapEligible,
+    finishRank: team.finishRank,
+  }, {
     headers: {
       'Cache-Control': 'no-store, no-cache, must-revalidate, private',
       'Pragma': 'no-cache',

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "DATA HEIST // Cyber Symposium 2026",
-  description: "High-stakes 90-minute cryptanalytic challenge event in the Advanced Programming Lab. Mystery-solving, ciphers, and CTF challenges.",
+  description: "High-stakes 30-minute cryptanalytic challenge event in the Advanced Programming Lab. Mystery-solving, ciphers, and CTF challenges.",
   icons: {
     icon: "/favicon.ico",
   },

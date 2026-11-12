@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticate } from '@/lib/db-store';
+import { authenticateAdmin } from '@/lib/db-store';
 import { createSession } from '@/lib/auth-session';
 
 export async function POST(request: NextRequest) {
@@ -14,11 +14,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const session = authenticate(username, password);
+    const session = authenticateAdmin(username, password);
 
     if (!session) {
       return NextResponse.json(
-        { error: 'Invalid terminal credentials. Access denied.' },
+        { error: 'Invalid proctor credentials. Access denied.' },
         { status: 401 }
       );
     }
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
         role: session.role,
         teamId: session.teamId,
       },
-      redirectTo: session.role === 'organizer' ? '/organizer' : '/dashboard',
+      redirectTo: '/organizer',
     });
   } catch (error) {
     console.error('Login error:', error);
