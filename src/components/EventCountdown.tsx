@@ -31,19 +31,20 @@ export default function EventCountdown({
     if (endTime) {
       return Math.max(0, Math.floor((new Date(endTime).getTime() - Date.now()) / 1000));
     }
+    // No endTime = game hasn't started, show full duration statically (no ticking)
     return propDuration * 60;
   });
   const [status, setStatus] = useState<EventStatus>('active');
   const [serverSynced, setServerSynced] = useState<boolean>(false);
 
-  // Sync if propDuration or endTime changes
+  // Sync if propDuration changes
   useEffect(() => {
     if (propDuration) {
       setDurationMinutes(propDuration);
     }
   }, [propDuration]);
 
-  // Recalculate if endTime prop changes
+  // Recalculate when endTime prop is first set or changes (game just started)
   useEffect(() => {
     if (endTime) {
       const calc = Math.max(0, Math.floor((new Date(endTime).getTime() - Date.now()) / 1000));
@@ -53,34 +54,12 @@ export default function EventCountdown({
     }
   }, [endTime, onTimeUpdate]);
 
-  // 1-second interval timer
+  // 1-second countdown — ONLY runs when endTime is set (i.e. game has started).
+  // Before the game starts, endTime is null/undefined, so we never tick and never
+  // hit the server — that prevents the "00:00:00 (EXPIRED)" bug.
   useEffect(() => {
     if (!isActive) return;
-
-    // If no endTime provided, fallback to fetching /api/event/status periodically
-    let syncInterval: NodeJS.Timeout | null = null;
-    if (!endTime) {
-      const syncWithServer = async () => {
-        try {
-          const res = await fetch('/api/event/status');
-          if (res.ok) {
-            const data = await res.json();
-            setRemainingSeconds(data.remainingSeconds);
-            setStatus(data.status);
-            setDurationMinutes(data.durationMinutes || 20);
-            setServerSynced(true);
-            if (onTimeUpdate) {
-              onTimeUpdate(data.remainingSeconds);
-            }
-          }
-        } catch (err) {
-          console.error('Failed to sync event clock:', err);
-        }
-      };
-
-      syncWithServer();
-      syncInterval = setInterval(syncWithServer, 15000);
-    }
+    if (!endTime) return; // Game not started — do not tick
 
     const timerId = setInterval(() => {
       setRemainingSeconds((prev) => {
@@ -96,7 +75,6 @@ export default function EventCountdown({
     }, 1000);
 
     return () => {
-      if (syncInterval) clearInterval(syncInterval);
       clearInterval(timerId);
     };
   }, [endTime, isActive, onTimeUpdate, onTimeExpired]);
@@ -112,11 +90,25 @@ export default function EventCountdown({
   const progressPercent = Math.min(100, Math.max(0, ((totalSeconds - remainingSeconds) / totalSeconds) * 100));
 
   const isLowTime = remainingSeconds < 300 && remainingSeconds > 0; // Less than 5 mins
-  const isExpired = remainingSeconds === 0;
+  const isExpired = remainingSeconds === 0 && !!endTime; // Only "expired" if game actually started
 
+  // ── COMPACT MODE ──────────────────────────────────────────────────────────
   if (compact) {
+    // Game hasn't started yet — show neutral badge instead of a countdown
+    if (!endTime) {
+      return (
+        <div
+          className="flex items-center gap-2 px-3 py-1.5 rounded font-mono text-xs border bg-slate-900/60 border-slate-700 text-slate-500"
+          title="Game has not started yet"
+        >
+          <Clock className="w-3.5 h-3.5" />
+          <span className="font-bold tracking-wider">AWAITING START</span>
+        </div>
+      );
+    }
+
     return (
-      <div 
+      <div
         className={`flex items-center gap-2 px-3 py-1.5 rounded font-mono text-xs border ${
           status === 'paused'
             ? 'bg-amber-950/20 border-amber-500/30 text-amber-400'
@@ -131,6 +123,35 @@ export default function EventCountdown({
         <Clock className="w-3.5 h-3.5" />
         <span className="font-bold tracking-wider">{isExpired ? '00:00:00 (EXPIRED)' : timeFormatted}</span>
         {status === 'paused' && <span className="text-[10px] uppercase bg-amber-500/20 px-1 rounded">PAUSED</span>}
+      </div>
+    );
+  }
+
+  // ── FULL MODE ─────────────────────────────────────────────────────────────
+  // Game hasn't started — show static "waiting for host" placeholder
+  if (!endTime) {
+    return (
+      <div className="p-4 rounded-xl border border-slate-700 bg-black/60 backdrop-blur-md">
+        <div className="flex items-center justify-between gap-4 mb-2">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-slate-500" />
+            <span className="text-xs uppercase font-mono tracking-widest text-slate-500">
+              {title}
+            </span>
+          </div>
+          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-900 text-slate-500 border border-slate-700">
+            WAITING FOR HOST
+          </span>
+        </div>
+        <div className="text-3xl md:text-4xl font-mono font-black tracking-widest text-slate-600">
+          20:00:00
+        </div>
+        <div className="text-right text-xs text-slate-600 font-mono mt-1">
+          {durationMinutes} MINUTE CAP // 10 CHALLENGES
+        </div>
+        <div className="w-full bg-slate-900/80 h-1.5 rounded-full mt-3 overflow-hidden border border-slate-800">
+          <div className="h-full w-0 bg-slate-700" />
+        </div>
       </div>
     );
   }
@@ -180,10 +201,10 @@ export default function EventCountdown({
 
       <div className="flex items-baseline justify-between">
         <div className={`text-3xl md:text-4xl font-mono font-black tracking-widest ${
-          isExpired 
+          isExpired
             ? 'text-red-500 text-glow-red animate-pulse'
-            : isLowTime 
-            ? 'text-red-400 text-glow-amber animate-pulse' 
+            : isLowTime
+            ? 'text-red-400 text-glow-amber animate-pulse'
             : 'text-cyan-300 text-glow-cyan'
         }`}>
           {timeFormatted}

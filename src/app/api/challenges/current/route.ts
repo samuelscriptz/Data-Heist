@@ -52,6 +52,7 @@ export async function GET() {
     team: {
       id: team.id,
       name: team.name,
+      lobbyStatus: team.lobbyStatus,
       currentChallengeIndex: team.currentChallengeIndex,
       isCompleted: team.isCompleted,
       completedAt: team.completedAt,

@@ -72,13 +72,15 @@ export default function HeaderNav({
 
         {/* Navigation links & Countdown */}
         <div className="flex items-center gap-2 sm:gap-4">
-          {/* Compact countdown: strictly hidden on home page and only visible if challenge is active */}
-          {!isHomePage && (showTimer || user?.role === 'organizer') && (
+          {/* Compact countdown: only shown when timer end time is known (game has started).
+              For organizer: always show so they can see AWAITING START vs live clock.
+              For participants: only when showTimer=true AND timerEndTime is set. */}
+          {!isHomePage && (user?.role === 'organizer' ? true : (showTimer && !!timerEndTime)) && (
             <div className="hidden md:block">
-              <EventCountdown 
-                compact 
-                endTime={timerEndTime} 
-                durationMinutes={durationMinutes} 
+              <EventCountdown
+                compact
+                endTime={timerEndTime}
+                durationMinutes={durationMinutes}
               />
             </div>
           )}

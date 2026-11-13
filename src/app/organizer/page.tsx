@@ -310,7 +310,12 @@ export default function OrganizerPage() {
   return (
     <div className="min-h-screen bg-[#080b10] text-slate-100 scanlines flex flex-col relative selection:bg-amber-500 selection:text-black">
       <MatrixRain />
-      <HeaderNav user={currentUser} />
+      <HeaderNav
+        user={currentUser}
+        showTimer={gameStarted}
+        timerEndTime={eventConfig?.endTime ?? null}
+        durationMinutes={eventConfig?.durationMinutes ?? 20}
+      />
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 py-6 relative z-10 w-full space-y-8 font-mono">
         {/* =========================================================================

@@ -70,8 +70,16 @@ export default function DashboardPage() {
       setMapNodes(chData.mapNodes || []);
       setActiveChallenge(chData.activeChallenge);
 
-      // Route guard: If team is still in waiting room (not started by host yet), redirect to /lobby
-      if (currentTeam && currentTeam.lobbyStatus && currentTeam.lobbyStatus !== 'in_game' && !currentTeam.isCompleted) {
+      // Route guard: only redirect to /lobby when lobbyStatus is EXPLICITLY a
+      // pre-game value. If lobbyStatus is undefined (stripped by old API shape) or
+      // 'in_game', the team stays on the dashboard.
+      if (
+        currentTeam &&
+        currentTeam.lobbyStatus &&
+        (currentTeam.lobbyStatus === 'pending_admission' ||
+          currentTeam.lobbyStatus === 'admitted') &&
+        !currentTeam.isCompleted
+      ) {
         router.push('/lobby');
         return;
       }
