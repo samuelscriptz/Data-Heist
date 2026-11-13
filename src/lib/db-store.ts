@@ -311,23 +311,57 @@ export function approveTeamReconnection(teamId: string): {
 export function admitTeam(teamId: string): { success: boolean; message: string } {
   const team = db.teams.get(teamId);
   if (!team) return { success: false, message: 'Team not found.' };
-  team.lobbyStatus = 'admitted';
 
-  logActivity({
-    type: 'admitted',
-    teamId: team.id,
-    teamName: team.name,
-    message: `Proctor admitted Team "${team.name}" into the symposium enclave.`,
-  });
+  const isStarted = db.eventConfig.gameStarted;
+  const now = new Date().toISOString();
+  const effectiveEnd = db.eventConfig.gameEndTime || db.eventConfig.endTime;
 
-  return { success: true, message: `Team "${team.name}" admitted.` };
+  if (isStarted) {
+    // If the game has already commenced, admitting the team immediately puts them in-game
+    // synchronized with the active countdown clock!
+    team.lobbyStatus = 'in_game';
+    team.startedAt = db.eventConfig.gameStartedAt || now;
+    team.timerEndTime = effectiveEnd;
+    team.durationMinutes = db.eventConfig.durationMinutes || 20;
+
+    logActivity({
+      type: 'admitted',
+      teamId: team.id,
+      teamName: team.name,
+      message: `Proctor admitted Team "${team.name}" directly into active game (Node #${team.currentChallengeIndex}).`,
+    });
+
+    return { success: true, message: `Team "${team.name}" admitted directly into active game.` };
+  } else {
+    team.lobbyStatus = 'admitted';
+
+    logActivity({
+      type: 'admitted',
+      teamId: team.id,
+      teamName: team.name,
+      message: `Proctor admitted Team "${team.name}" into the waiting room.`,
+    });
+
+    return { success: true, message: `Team "${team.name}" admitted.` };
+  }
 }
 
 export function admitAllTeams(): { success: boolean; count: number; message: string } {
   let count = 0;
+  const isStarted = db.eventConfig.gameStarted;
+  const now = new Date().toISOString();
+  const effectiveEnd = db.eventConfig.gameEndTime || db.eventConfig.endTime;
+
   for (const team of db.teams.values()) {
     if (team.lobbyStatus === 'pending_admission') {
-      team.lobbyStatus = 'admitted';
+      if (isStarted) {
+        team.lobbyStatus = 'in_game';
+        team.startedAt = db.eventConfig.gameStartedAt || now;
+        team.timerEndTime = effectiveEnd;
+        team.durationMinutes = db.eventConfig.durationMinutes || 20;
+      } else {
+        team.lobbyStatus = 'admitted';
+      }
       count++;
     }
   }
@@ -336,7 +370,9 @@ export function admitAllTeams(): { success: boolean; count: number; message: str
     type: 'admitted',
     teamId: 'all',
     teamName: 'ALL TEAMS',
-    message: `Proctor batch-admitted all ${count} pending team(s) into the symposium enclave.`,
+    message: isStarted
+      ? `Proctor batch-admitted all ${count} pending team(s) directly into active game.`
+      : `Proctor batch-admitted all ${count} pending team(s) into the waiting room.`,
   });
 
   return { success: true, count, message: `Admitted ${count} pending team(s).` };
@@ -366,19 +402,24 @@ export function startGlobalGame(): {
   const now = new Date();
   const duration = db.eventConfig.durationMinutes || 20;
   const endTime = new Date(now.getTime() + duration * 60 * 1000);
+  const isoEnd = endTime.toISOString();
+  const isoNow = now.toISOString();
 
   db.eventConfig.gameStarted = true;
-  db.eventConfig.gameStartedAt = now.toISOString();
-  db.eventConfig.gameEndTime = endTime.toISOString();
+  db.eventConfig.gameStartedAt = isoNow;
+  db.eventConfig.startTime = isoNow;
+  db.eventConfig.gameEndTime = isoEnd;
+  db.eventConfig.endTime = isoEnd;
   db.eventConfig.status = 'active';
+  db.eventConfig.pausedRemainingSeconds = null;
 
   let startedCount = 0;
   for (const team of db.teams.values()) {
     // Both admitted and pending teams transition to in_game upon global host start
     if (team.lobbyStatus === 'admitted' || team.lobbyStatus === 'pending_admission') {
       team.lobbyStatus = 'in_game';
-      team.startedAt = now.toISOString();
-      team.timerEndTime = endTime.toISOString();
+      team.startedAt = isoNow;
+      team.timerEndTime = isoEnd;
       team.durationMinutes = duration;
       startedCount++;
     }
@@ -394,9 +435,77 @@ export function startGlobalGame(): {
   return {
     success: true,
     startedCount,
-    endTime: endTime.toISOString(),
+    endTime: isoEnd,
     message: `Operation Data Heist commenced for ${startedCount} teams!`,
   };
+}
+
+export function pauseGlobalGame(): { success: boolean; message: string; remainingSeconds: number } {
+  if (db.eventConfig.status === 'paused') {
+    return { 
+      success: true, 
+      message: 'Event timer is already paused.', 
+      remainingSeconds: db.eventConfig.pausedRemainingSeconds || 0 
+    };
+  }
+
+  const now = Date.now();
+  let remaining = (db.eventConfig.durationMinutes || 20) * 60;
+  const effectiveEnd = db.eventConfig.gameEndTime || db.eventConfig.endTime;
+  if (effectiveEnd) {
+    const end = new Date(effectiveEnd).getTime();
+    remaining = Math.max(0, Math.floor((end - now) / 1000));
+  }
+
+  db.eventConfig.status = 'paused';
+  db.eventConfig.pausedRemainingSeconds = remaining;
+
+  logActivity({
+    type: 'game_start',
+    teamId: 'global',
+    teamName: 'ALL TEAMS',
+    message: `PROCTOR PAUSED THE EVENT. Countdown frozen with ${Math.floor(remaining / 60)}m ${remaining % 60}s remaining.`,
+  });
+
+  return { 
+    success: true, 
+    message: 'Event countdown paused.', 
+    remainingSeconds: remaining 
+  };
+}
+
+export function resumeGlobalGame(): { success: boolean; message: string; endTime: string } {
+  if (db.eventConfig.status !== 'paused') {
+    return { 
+      success: true, 
+      message: 'Event timer is not paused.', 
+      endTime: db.eventConfig.gameEndTime || db.eventConfig.endTime || '' 
+    };
+  }
+
+  const now = Date.now();
+  const remaining = db.eventConfig.pausedRemainingSeconds ?? ((db.eventConfig.durationMinutes || 20) * 60);
+  const newEndTime = new Date(now + remaining * 1000).toISOString();
+
+  db.eventConfig.status = 'active';
+  db.eventConfig.gameEndTime = newEndTime;
+  db.eventConfig.endTime = newEndTime;
+  db.eventConfig.pausedRemainingSeconds = null;
+
+  for (const team of db.teams.values()) {
+    if (team.lobbyStatus === 'in_game' && !team.isCompleted) {
+      team.timerEndTime = newEndTime;
+    }
+  }
+
+  logActivity({
+    type: 'game_start',
+    teamId: 'global',
+    teamName: 'ALL TEAMS',
+    message: `PROCTOR RESUMED THE EVENT. Countdown running with new deadline: ${new Date(newEndTime).toLocaleTimeString()}.`,
+  });
+
+  return { success: true, message: 'Event timer resumed.', endTime: newEndTime };
 }
 
 // ==================== TEAM & PROGRESS METHODS ====================
@@ -472,7 +581,11 @@ export function getLeaderboard(): Array<{
 }
 
 export function getTeamRemainingSeconds(team: Team): number {
-  const endTime = team.timerEndTime || db.eventConfig.gameEndTime;
+  if (db.eventConfig.status === 'paused') {
+    return db.eventConfig.pausedRemainingSeconds ?? ((team.durationMinutes || 20) * 60);
+  }
+
+  const endTime = team.timerEndTime || db.eventConfig.gameEndTime || db.eventConfig.endTime;
   if (!endTime) {
     return (team.durationMinutes || 20) * 60;
   }
@@ -482,6 +595,9 @@ export function getTeamRemainingSeconds(team: Team): number {
 }
 
 export function isTeamTimeExpired(team: Team): boolean {
+  if (db.eventConfig.status === 'paused') {
+    return false;
+  }
   if (!db.eventConfig.gameStarted && !team.startedAt) {
     return false;
   }
@@ -816,37 +932,29 @@ export function rejectTeamCompletion(
 
 // Reset an event run (organizer only)
 export function resetEventRun(): { success: boolean; message: string } {
-  db.teams.forEach(team => {
-    team.currentChallengeIndex = 1;
-    team.isCompleted = false;
-    team.completedAt = null;
-    team.reviewStatus = 'none';
-    team.reviewedAt = null;
-    team.reviewedBy = null;
-    team.mapEligible = false;
-    team.finishRank = null;
-    team.score = 0;
-    team.totalAttempts = 0;
-    team.lastSolvedAt = null;
-    team.startedAt = null;
-    team.timerEndTime = null;
-    team.durationMinutes = 20;
-    team.lobbyStatus = 'pending_admission';
-    team.reconnectPending = false;
-    team.reconnectSessionId = null;
-    team.reconnectRequestedAt = null;
-  });
+  // 1. Completely remove all registered teams (wipes leaderboards and queues)
+  db.teams.clear();
 
+  // 2. Clear all submissions, hints, rate limits
   db.submissions = [];
   db.hintsUnlocked.clear();
   db.rateLimitMap.clear();
 
+  // 3. Clear participant sessions (keep organizer logged in)
+  for (const [token, session] of db.sessions.entries()) {
+    if (session.role === 'participant') {
+      db.sessions.delete(token);
+    }
+  }
+
+  // 4. Reset event configuration and timers back to clean 20-minute upcoming state
   db.eventConfig.durationMinutes = 20;
   db.eventConfig.gameStarted = false;
   db.eventConfig.gameStartedAt = null;
   db.eventConfig.gameEndTime = null;
   db.eventConfig.startTime = null;
   db.eventConfig.endTime = null;
+  db.eventConfig.pausedRemainingSeconds = null;
   db.eventConfig.status = 'upcoming';
 
   db.activityFeed = [
@@ -856,11 +964,11 @@ export function resetEventRun(): { success: boolean; message: string } {
       type: 'game_start',
       teamId: 'system',
       teamName: 'SYSTEM MAINFRAME',
-      message: 'Event reset executed by proctor. All teams returned to lobby waiting room.',
+      message: 'Full event reset executed by proctor. All teams and leaderboards cleared. Ready for fresh 20-minute run.',
     }
   ];
 
-  return { success: true, message: 'Event reset successfully. All team progress and map unlocks cleared.' };
+  return { success: true, message: 'Event reset successfully. All teams and leaderboards cleared. Timer reset to 20:00.' };
 }
 
 // ==================== VENUE MAP AUTHORITATIVE ACCESS CHECK ====================

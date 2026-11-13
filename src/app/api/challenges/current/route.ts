@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentSession } from '@/lib/auth-session';
-import { getTeam, getUnlockedHint, getTeamRemainingSeconds, isTeamTimeExpired } from '@/lib/db-store';
+import { getTeam, getUnlockedHint, getTeamRemainingSeconds, isTeamTimeExpired, db } from '@/lib/db-store';
 import { SERVER_CHALLENGES, getSanitizedChallenge } from '@/lib/challenges-data';
 
 export async function GET() {
@@ -48,6 +48,19 @@ export async function GET() {
     );
   }
 
+  // Auto-heal: If global game has started and team is admitted or in_game, ensure in_game state & timer
+  if (db.eventConfig.gameStarted) {
+    if (team.lobbyStatus === 'admitted' || team.lobbyStatus === 'in_game') {
+      team.lobbyStatus = 'in_game';
+      if (!team.startedAt) {
+        team.startedAt = db.eventConfig.gameStartedAt || new Date().toISOString();
+      }
+      if (!team.timerEndTime) {
+        team.timerEndTime = db.eventConfig.gameEndTime || db.eventConfig.endTime;
+      }
+    }
+  }
+
   return NextResponse.json({
     team: {
       id: team.id,
@@ -70,5 +83,9 @@ export async function GET() {
     },
     mapNodes,
     activeChallenge,
+    gameStarted: db.eventConfig.gameStarted,
+    eventStatus: db.eventConfig.status,
+  }, {
+    headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
   });
 }

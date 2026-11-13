@@ -230,7 +230,7 @@ export default function OrganizerPage() {
   const handleEventControl = async (action: 'pause' | 'resume' | 'reset') => {
     if (action === 'reset') {
       const confirmed = window.confirm(
-        'WARNING: RESET DATA HEIST EVENT?\n\nThis will reset all team challenge progression, return all teams to waiting room lobby, and reset map reveal slots. Confirm?'
+        'WARNING: COMPLETE RESET OF DATA HEIST EVENT?\n\nThis will completely remove all registered teams from the leaderboard, wipe all scores/submissions, and reset the 20-minute countdown back to the beginning.\n\nAre you sure you want to completely reset?'
       );
       if (!confirmed) return;
     }
@@ -245,7 +245,7 @@ export default function OrganizerPage() {
 
       if (res.ok) {
         sound.playUnlock();
-        await fetchOrganizerData(true);
+        await fetchOrganizerData(false);
       }
     } catch (err) {
       console.error('Event control error:', err);
@@ -313,8 +313,9 @@ export default function OrganizerPage() {
       <HeaderNav
         user={currentUser}
         showTimer={gameStarted}
-        timerEndTime={eventConfig?.endTime ?? null}
+        timerEndTime={eventConfig?.gameEndTime || eventConfig?.endTime || null}
         durationMinutes={eventConfig?.durationMinutes ?? 20}
+        isPaused={eventConfig?.status === 'paused'}
       />
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 py-6 relative z-10 w-full space-y-8 font-mono">
@@ -455,11 +456,27 @@ export default function OrganizerPage() {
                   </button>
                 </>
               ) : (
-                <div className="flex items-center gap-3 bg-black/60 px-5 py-3 rounded-xl border border-emerald-500/40">
-                  <Clock className="w-5 h-5 text-emerald-400 animate-spin" style={{ animationDuration: '6s' }} />
-                  <div>
-                    <span className="text-[10px] text-slate-400 uppercase block">EVENT STATUS</span>
-                    <span className="text-xs font-bold text-emerald-300">SERVER CLOCK LIVE</span>
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                  {pendingTeams.length > 0 && (
+                    <button
+                      onClick={() => handleLobbyAction('admit_all')}
+                      disabled={actionInProgress === 'admit_all'}
+                      className="w-full sm:w-auto px-5 py-3.5 rounded-xl font-bold text-xs bg-emerald-500 hover:bg-emerald-400 text-slate-950 flex items-center justify-center gap-2 cursor-pointer transition-all glow-green shadow-lg animate-pulse"
+                      title="Admit all late joiners directly into active game"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      <span>ADMIT LATE TEAMS TO GAME ({pendingTeams.length})</span>
+                    </button>
+                  )}
+
+                  <div className="flex items-center gap-3 bg-black/60 px-5 py-3 rounded-xl border border-emerald-500/40">
+                    <Clock className="w-5 h-5 text-emerald-400 animate-spin" style={{ animationDuration: '6s' }} />
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase block">EVENT STATUS</span>
+                      <span className="text-xs font-bold text-emerald-300">
+                        {eventConfig?.status === 'paused' ? 'EVENT PAUSED' : 'SERVER CLOCK LIVE'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -587,22 +604,24 @@ export default function OrganizerPage() {
         </div>
 
         {/* =========================================================================
-            WAITING ROOM / LOBBY QUEUE SECTION (WHEN TEAMS ARE IN LOBBY)
+            WAITING ROOM / LOBBY QUEUE SECTION (ALWAYS VISIBLE WHEN TEAMS ARE WAITING)
            ========================================================================= */}
-        {pendingTeams.length > 0 && !gameStarted && (
+        {pendingTeams.length > 0 && (
           <div className="bg-slate-950/90 border border-cyan-500/40 rounded-xl overflow-hidden glow-cyan">
             <div className="bg-slate-900/90 px-6 py-3.5 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-cyan-400" />
                 <h2 className="text-sm font-bold text-slate-100 uppercase tracking-wider">
-                  WAITING ROOM ADMISSIONS QUEUE ({pendingTeams.length})
+                  {gameStarted
+                    ? `LATE-JOINING TEAMS IN WAITING ROOM (${pendingTeams.length})`
+                    : `WAITING ROOM ADMISSIONS QUEUE (${pendingTeams.length})`}
                 </h2>
               </div>
               <button
                 onClick={() => handleLobbyAction('admit_all')}
-                className="px-3 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs cursor-pointer glow-green"
+                className="px-3 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs cursor-pointer glow-green shadow-md"
               >
-                ADMIT ALL TEAMS
+                {gameStarted ? 'ADMIT ALL TO LIVE GAME' : 'ADMIT ALL TEAMS'}
               </button>
             </div>
 
@@ -623,7 +642,7 @@ export default function OrganizerPage() {
                       onClick={() => handleLobbyAction('admit', t.id)}
                       className="px-2.5 py-1 rounded bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold cursor-pointer"
                     >
-                      ADMIT
+                      {gameStarted ? 'ADMIT TO GAME' : 'ADMIT'}
                     </button>
                     <button
                       onClick={() => handleLobbyAction('kick', t.id)}

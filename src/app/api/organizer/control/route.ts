@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentSession } from '@/lib/auth-session';
-import { db, resetEventRun, startGlobalGame } from '@/lib/db-store';
+import { db, resetEventRun, startGlobalGame, pauseGlobalGame, resumeGlobalGame } from '@/lib/db-store';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,11 +17,11 @@ export async function POST(request: NextRequest) {
       const result = startGlobalGame();
       return NextResponse.json(result);
     } else if (action === 'pause') {
-      db.eventConfig.status = 'paused';
-      return NextResponse.json({ success: true, message: 'Event timer paused.' });
+      const result = pauseGlobalGame();
+      return NextResponse.json(result);
     } else if (action === 'resume') {
-      db.eventConfig.status = 'active';
-      return NextResponse.json({ success: true, message: 'Event timer resumed.' });
+      const result = resumeGlobalGame();
+      return NextResponse.json(result);
     } else if (action === 'reset') {
       const result = resetEventRun();
       return NextResponse.json(result);

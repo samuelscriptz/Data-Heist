@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [eventStatus, setEventStatus] = useState<string>('active');
 
   const fetchDashboardData = useCallback(async (isSilent = false) => {
     if (!isSilent) setRefreshing(true);
@@ -69,15 +70,24 @@ export default function DashboardPage() {
       setTeam(currentTeam);
       setMapNodes(chData.mapNodes || []);
       setActiveChallenge(chData.activeChallenge);
+      setEventStatus(chData.eventStatus || 'active');
 
-      // Route guard: only redirect to /lobby when lobbyStatus is EXPLICITLY a
-      // pre-game value. If lobbyStatus is undefined (stripped by old API shape) or
-      // 'in_game', the team stays on the dashboard.
+      // Route guard: Only redirect to /lobby if the team is still awaiting proctor admission,
+      // or if admitted before global game start.
+      // Once game has started or team is in_game, they stay on the dashboard!
       if (
         currentTeam &&
-        currentTeam.lobbyStatus &&
-        (currentTeam.lobbyStatus === 'pending_admission' ||
-          currentTeam.lobbyStatus === 'admitted') &&
+        currentTeam.lobbyStatus === 'pending_admission' &&
+        !currentTeam.isCompleted
+      ) {
+        router.push('/lobby');
+        return;
+      }
+
+      if (
+        currentTeam &&
+        currentTeam.lobbyStatus === 'admitted' &&
+        !chData.gameStarted &&
         !currentTeam.isCompleted
       ) {
         router.push('/lobby');
@@ -186,9 +196,20 @@ export default function DashboardPage() {
         showTimer={true} 
         timerEndTime={team?.timerEndTime} 
         durationMinutes={team?.durationMinutes || 20} 
+        isPaused={eventStatus === 'paused'}
       />
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 py-6 relative z-10 w-full space-y-6">
+        {/* Paused alert banner */}
+        {eventStatus === 'paused' && (
+          <div className="p-3.5 rounded-xl bg-amber-950/60 border border-amber-500/60 text-amber-300 text-xs font-mono flex items-center justify-between glow-amber animate-pulse">
+            <div className="flex items-center gap-2">
+              <Radio className="w-4 h-4 text-amber-400 shrink-0 animate-ping" />
+              <span className="font-bold">EVENT TEMPORARILY PAUSED BY PROCTOR: Countdown clock and challenge submissions are temporarily frozen.</span>
+            </div>
+          </div>
+        )}
+
         {/* Error notification banner if any */}
         {error && (
           <div className="p-3 rounded-lg bg-red-950/50 border border-red-500/50 text-red-300 text-xs font-mono flex items-center justify-between">
@@ -258,6 +279,7 @@ export default function DashboardPage() {
                 <EventCountdown 
                   endTime={team?.timerEndTime} 
                   durationMinutes={team?.durationMinutes || 20}
+                  isPaused={eventStatus === 'paused'}
                   title="20-MINUTE HEIST COUNTDOWN"
                   onTimeExpired={() => {
                     fetchDashboardData(true);

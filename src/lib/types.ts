@@ -119,6 +119,7 @@ export interface EventConfig {
   venueRoom: string;
   mapQuota: number; // 6
   hintsAllowed: boolean;
+  pausedRemainingSeconds?: number | null;
 }
 
 export interface LeaderboardEntry {

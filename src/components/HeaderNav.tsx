@@ -17,13 +17,15 @@ interface HeaderNavProps {
   showTimer?: boolean;
   timerEndTime?: string | null;
   durationMinutes?: number;
+  isPaused?: boolean;
 }
 
 export default function HeaderNav({ 
   user, 
   showTimer = false, 
   timerEndTime, 
-  durationMinutes = 20 
+  durationMinutes = 20,
+  isPaused = false,
 }: HeaderNavProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -81,6 +83,7 @@ export default function HeaderNav({
                 compact
                 endTime={timerEndTime}
                 durationMinutes={durationMinutes}
+                isPaused={isPaused}
               />
             </div>
           )}
